@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-fade-in" style="max-width: 600px; margin: 0 auto;">
+    <div class="stat-card" style="margin-bottom: 2rem;">
+        <h2 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">Admin Panel</h2>
+        
+        <div id="login-section">
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter admin password">
+            </div>
+            <button class="btn btn-primary" onclick="login()">Login</button>
+            <div id="login-error" style="color: var(--danger); margin-top: 1rem; display: none;"></div>
+        </div>
+
+        <div id="control-section" style="display: none;">
+            <div style="padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; margin-bottom: 1.5rem;">
+                <span style="color: var(--success); font-weight: 600;">Authenticated</span>
+            </div>
+            
+            <button class="btn btn-primary" onclick="triggerPipeline()" style="width: 100%; margin-bottom: 1rem; padding: 1rem; font-size: 1.1rem;">
+                🚀 수동 파이프라인 트리거 (Fetch News)
+            </button>
+            
+            <button class="btn" onclick="logout()" style="width: 100%;">Logout</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check if we already have a session cookie
+    if (document.cookie.includes('admin_session=')) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('control-section').style.display = 'block';
+    }
+
+    async function login() {
+        const password = document.getElementById('password').value;
+        const errDiv = document.getElementById('login-error');
+        
+        try {
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({password: password})
+            });
+            
+            if (res.ok) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('control-section').style.display = 'block';
+                errDiv.style.display = 'none';
+            } else {
+                errDiv.textContent = 'Invalid password';
+                errDiv.style.display = 'block';
+            }
+        } catch (e) {
+            errDiv.textContent = 'Network error';
+            errDiv.style.display = 'block';
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/admin/logout', { method: 'POST' });
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('control-section').style.display = 'none';
+        document.getElementById('password').value = '';
+    }
+
+    async function triggerPipeline() {
+        try {
+            const res = await fetch('/api/admin/trigger-pipeline', { method: 'POST' });
+            if (res.ok) {
+                alert('파이프라인이 백그라운드에서 시작되었습니다. 대시보드를 확인하세요.');
+            } else {
+                alert('파이프라인 트리거 실패. 세션이 만료되었을 수 있습니다.');
+                logout();
+            }
+        } catch (e) {
+            alert('오류 발생: ' + e);
+        }
+    }
+</script>
+{% endblock %}

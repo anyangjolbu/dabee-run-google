@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DABEE Run</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">DABEE Run</div>
+            <nav>
+                <a href="/" class="btn" style="text-decoration:none; margin-right: 0.5rem;">Dashboard</a>
+                <a href="/admin" class="btn" style="text-decoration:none;">Admin</a>
+            </nav>
+        </header>
+        
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script>
+        // Common utility functions can go here
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <h3>Total Articles</h3>
+            <div class="value" id="total-articles">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Today's Alerts</h3>
+            <div class="value" style="color: var(--warning)">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>System Status</h3>
+            <div class="value" style="color: var(--success); font-size: 1.5rem; display: flex; align-items: center; height: 100%;">Online</div>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">Latest Feed</h2>
+    <div class="feed" id="article-feed">
+        <!-- Articles will be loaded here via JS -->
+    </div>
+</div>
+
+<script>
+    async function fetchStats() {
+        try {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+            document.getElementById('total-articles').textContent = data.total_articles;
+        } catch (e) {
+            console.error('Failed to fetch stats', e);
+        }
+    }
+
+    async function fetchArticles() {
+        try {
+            const res = await fetch('/api/articles?limit=10');
+            const data = await res.json();
+            const feed = document.getElementById('article-feed');
+            
+            if (data.length === 0) {
+                feed.innerHTML = '<div class="article-card"><p style="color: var(--text-secondary)">수집된 기사가 없습니다.</p></div>';
+                return;
+            }
+
+            feed.innerHTML = data.map((article, index) => {
+                let badgeClass = 'badge-info';
+                if (article.tier === 1) badgeClass = 'badge-danger';
+                if (article.tone_label === '우호') badgeClass = 'badge-success';
+                else if (article.tone_label === '비우호') badgeClass = 'badge-danger';
+
+                return `
+                    <div class="article-card animate-fade-in" style="animation-delay: ${index * 0.1}s">
+                        <div class="article-header">
+                            <a href="${article.url}" target="_blank" class="article-title">${article.title}</a>
+                            <span class="badge ${badgeClass}">Tier ${article.tier || 2}</span>
+                        </div>
+                        <div class="article-meta">
+                            <span>${article.press || 'Unknown Press'}</span>
+                            <span>${article.tone_label || '중립'}</span>
+                        </div>
+                        <div class="article-summary">
+                            ${article.summary || '요약 정보가 없습니다.'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Failed to fetch articles', e);
+        }
+    }
+
+    // Connect to WebSocket for live updates
+    const ws = new WebSocket(`ws://${window.location.host}/ws`);
+    ws.onmessage = function(event) {
+        console.log("WS Update:", event.data);
+        // Refresh feed on update
+        fetchStats();
+        fetchArticles();
+    };
+
+    // Initial load
+    fetchStats();
+    fetchArticles();
+</script>
+{% endblock %}
