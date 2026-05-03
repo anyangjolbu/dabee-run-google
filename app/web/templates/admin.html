@@ -22,6 +22,9 @@
                     <button class="btn btn-primary" onclick="triggerPipeline()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--warning); border-color: var(--warning);">
                         🔄 파이프라인 1회 수동 실행
                     </button>
+                    <button class="btn btn-primary" onclick="stopPipeline()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--danger); border-color: var(--danger);">
+                        🛑 수집 강제 중단
+                    </button>
                     <button class="btn btn-primary" onclick="triggerReport()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--info); border-color: var(--info);">
                         📊 일일 리포트 즉시 발송
                     </button>
@@ -169,6 +172,17 @@
             }
         } catch (e) {
             alert('오류 발생: ' + e);
+        }
+    }
+
+    async function stopPipeline() {
+        try {
+            const res = await fetch('/api/admin/stop-pipeline', { method: 'POST' });
+            if (res.ok) {
+                alert('파이프라인 중단을 요청했습니다. 현재 처리 중인 기사까지만 요약하고 멈춥니다.');
+            }
+        } catch (e) {
+            console.error(e);
         }
     }
 

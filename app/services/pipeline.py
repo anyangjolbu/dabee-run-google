@@ -15,18 +15,41 @@ import html
 
 settings = get_settings()
 
+_pipeline_running = False
+_pipeline_stop_requested = False
+
+def stop_pipeline():
+    global _pipeline_stop_requested
+    _pipeline_stop_requested = True
+    add_log("🛑 수집 중단 요청됨 (현재 처리 중인 기사가 끝나면 멈춥니다)")
+
 def run_pipeline():
+    global _pipeline_running, _pipeline_stop_requested
+    if _pipeline_running:
+        add_log("⚠️ 파이프라인이 이미 실행 중입니다.")
+        return
+        
+    _pipeline_running = True
+    _pipeline_stop_requested = False
+    
     add_log("▶️ 파이프라인 수집 시작")
     db = SessionLocal()
     try:
         keywords = [k.strip() for k in settings.search_keywords.split(",") if k.strip()]
         for keyword in keywords:
+            if _pipeline_stop_requested:
+                break
+                
             add_log(f"🔍 '{keyword}' 키워드로 뉴스 검색 중...")
             raw_articles = fetch_news(keyword)
             add_log(f"📥 수집 완료: {len(raw_articles)}건")
             
             processed_count = 0
             for item in raw_articles:
+                if _pipeline_stop_requested:
+                    add_log("🛑 사용자에 의해 수집이 강제 중단되었습니다.")
+                    break
+                    
                 url = item.get("link", "")
                 title = html.unescape(item.get("title", "").replace("<b>", "").replace("</b>", ""))
                 
@@ -82,22 +105,29 @@ def run_pipeline():
                 db.add(new_article)
                 db.commit()
                 
-                # 8. Send Telegram for Tier 1
-                if tier == 1:
-                    add_log("📤 텔레그램 전송 시작...")
-                    msg = f"🚨 <b>[비우호 기사 감지]</b>\n\n<b>제목:</b> {title}\n<b>요약:</b> {summary}\n<b>판단:</b> {tone_reason}\n\n<a href='{url}'>기사 원문 보기</a>"
-                    
-                    # DB에 등록된 수신자들에게 발송
-                    recipients = db.query(Recipient).filter(Recipient.is_active == True).all()
-                    for recipient in recipients:
-                        if recipient.tier_permission >= tier: # 권한 체크
-                            send_message(recipient.telegram_id, msg)
-                    add_log("✅ 텔레그램 전송 완료")
+                # 8. Send Telegram
+                msg_tier1 = f"🚨 <b>[비우호 기사 감지]</b>\n\n<b>제목:</b> {title}\n<b>요약:</b> {summary}\n<b>판단:</b> {tone_reason}\n\n<a href='{url}'>기사 원문 보기</a>"
+                msg_tier2 = f"📰 <b>[신규 기사 알림 - {tone_label}]</b>\n\n<b>제목:</b> {title}\n<b>요약:</b> {summary}\n\n<a href='{url}'>기사 원문 보기</a>"
+                msg = msg_tier1 if tier == 1 else msg_tier2
+                
+                recipients = db.query(Recipient).filter(Recipient.is_active == True).all()
+                sent_count = 0
+                for recipient in recipients:
+                    if recipient.tier_permission >= tier: # 권한 체크
+                        if sent_count == 0:
+                            add_log("📤 텔레그램 전송 시작...")
+                        send_message(recipient.telegram_id, msg)
+                        sent_count += 1
+                
+                if sent_count > 0:
+                    add_log(f"✅ 텔레그램 전송 완료 ({sent_count}명에게 발송)")
             
             add_log(f"⚙️ '{keyword}' 검색 종료 (신규 처리: {processed_count}건)")
             
     except Exception as e:
         add_log(f"❌ 파이프라인 에러: {e}")
     finally:
+        _pipeline_running = False
+        _pipeline_stop_requested = False
         db.close()
     add_log("⏹️ 파이프라인 종료")

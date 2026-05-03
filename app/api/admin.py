@@ -36,6 +36,12 @@ def trigger_pipeline(is_admin: bool = Depends(get_current_admin)):
     threading.Thread(target=run_pipeline).start()
     return {"status": "pipeline_started"}
 
+@router.post("/stop-pipeline")
+def stop_pipeline_api(is_admin: bool = Depends(get_current_admin)):
+    from app.services.pipeline import stop_pipeline
+    stop_pipeline()
+    return {"status": "stopping"}
+
 @router.post("/trigger-report")
 def trigger_report(is_admin: bool = Depends(get_current_admin)):
     from app.services.report_builder import generate_daily_report
