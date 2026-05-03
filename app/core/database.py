@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 from app.core.config import get_settings
 import os
 
@@ -17,9 +19,12 @@ engine = create_engine(
 )
 
 if settings.database_url.startswith("sqlite"):
-    with engine.connect() as conn:
-        conn.execute(engine.dialect.statement_compiler.dialect.execution_options(isolation_level="AUTOCOMMIT").statement_compiler.dialect.statement_compiler(engine.dialect, None).statement_compiler.dialect.execution_options(isolation_level="AUTOCOMMIT").statement_compiler.dialect.do_execute(conn.connection, "PRAGMA journal_mode=WAL", (), {}))
-
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
