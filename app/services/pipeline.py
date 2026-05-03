@@ -7,19 +7,24 @@ from .crawler import crawl_content
 from .summarizer import summarize_article
 from .tone_analyzer import analyze_tone
 from .telegram_sender import send_message
+from app.core.config import get_settings
 import datetime
 import email.utils
 import html
+
+settings = get_settings()
 
 def run_pipeline():
     print("Starting actual pipeline run...")
     db = SessionLocal()
     try:
-        # 1. Fetch News
-        raw_articles = fetch_news("SK하이닉스")
-        
-        for item in raw_articles:
-            url = item.get("link", "")
+        keywords = [k.strip() for k in settings.search_keywords.split(",") if k.strip()]
+        for keyword in keywords:
+            print(f"Fetching news for keyword: {keyword}")
+            raw_articles = fetch_news(keyword)
+            
+            for item in raw_articles:
+                url = item.get("link", "")
             
             # 네이버 API는 HTML 태그를 포함해서 반환하므로 제거
             title = html.unescape(item.get("title", "").replace("<b>", "").replace("</b>", ""))

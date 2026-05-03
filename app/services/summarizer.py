@@ -14,7 +14,7 @@ def summarize_article(content: str) -> str:
         return "본문이 너무 짧아 요약할 수 없습니다."
         
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         prompt = f"다음 뉴스 기사의 핵심 내용을 3~5문장으로 간결하게 요약해 주세요:\n\n{content}"
         response = model.generate_content(prompt)
         return response.text.strip()

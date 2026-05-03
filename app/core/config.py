@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     naver_client_secret: str = ""
     gemini_api_key: str = ""
     telegram_bot_token: str = ""
+    search_keywords: str = "SK하이닉스,반도체,HBM"
     database_url: str = "sqlite:///./data/articles.db"
     
     model_config = SettingsConfigDict(env_file=".env")

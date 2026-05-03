@@ -1,55 +1,131 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="animate-fade-in" style="max-width: 600px; margin: 0 auto;">
-    <div class="stat-card" style="margin-bottom: 2rem;">
-        <h2 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">Admin Panel</h2>
-        
-        <div id="login-section">
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" class="form-control" placeholder="Enter admin password">
+<div class="animate-fade-in">
+    <div class="dashboard-stats" style="grid-template-columns: 1fr;">
+        <div class="stat-card">
+            <h2 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">Admin Panel</h2>
+            
+            <!-- Login Section -->
+            <div id="login-section" style="max-width: 400px;">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter admin password" onkeypress="if(event.key === 'Enter') login()">
+                </div>
+                <button class="btn btn-primary" onclick="login()">Login</button>
+                <div id="login-error" style="color: var(--danger); margin-top: 1rem; display: none;"></div>
             </div>
-            <button class="btn btn-primary" onclick="login()">Login</button>
-            <div id="login-error" style="color: var(--danger); margin-top: 1rem; display: none;"></div>
-        </div>
 
-        <div id="control-section" style="display: none;">
-            <div style="padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; margin-bottom: 1.5rem;">
-                <span style="color: var(--success); font-weight: 600;">Authenticated</span>
+            <!-- Control Section -->
+            <div id="control-section" style="display: none;">
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <button class="btn btn-primary" onclick="triggerPipeline()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--warning); border-color: var(--warning);">
+                        🔄 파이프라인 수동 수집 실행
+                    </button>
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+
+                <!-- 탭 버튼 -->
+                <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--card-border); margin-bottom: 1.5rem; padding-bottom: 0.5rem;">
+                    <button id="tab-btn-logs" class="btn" style="background: var(--accent); color: white;" onclick="switchTab('logs')">📋 기사 수집 로그</button>
+                    <button id="tab-btn-users" class="btn" style="background: transparent;" onclick="switchTab('users')">👥 수신자 관리</button>
+                </div>
+
+                <!-- 로그 탭 -->
+                <div id="tab-logs">
+                    <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+                        <button class="btn" onclick="loadLogs()">🔄 새로고침</button>
+                        <button class="btn" style="background: var(--danger); border-color: var(--danger);" onclick="resetArticles()">🗑️ 기사 전체 초기화(리셋)</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--card-border);">
+                                    <th style="padding: 0.75rem;">ID</th>
+                                    <th style="padding: 0.75rem;">시간</th>
+                                    <th style="padding: 0.75rem; width: 40%;">제목</th>
+                                    <th style="padding: 0.75rem;">AI 톤 분석</th>
+                                    <th style="padding: 0.75rem;">Tier</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-list">
+                                <!-- Loaded via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 수신자 탭 -->
+                <div id="tab-users" style="display: none;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--card-border);">
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Name</label>
+                                <input type="text" id="rec_name" class="form-control" placeholder="홍길동">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                <label>Chat ID</label>
+                                <input type="text" id="rec_chat_id" class="form-control" placeholder="123456789">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; width: 100px;">
+                                <label>Tier</label>
+                                <select id="rec_tier" class="form-control">
+                                    <option value="1">Tier 1 (긴급만)</option>
+                                    <option value="2" selected>Tier 2 (전체)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="addRecipient()">추가</button>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--card-border);">
+                                <th style="padding: 0.5rem;">ID</th>
+                                <th style="padding: 0.5rem;">Name</th>
+                                <th style="padding: 0.5rem;">Chat ID</th>
+                                <th style="padding: 0.5rem;">Permission</th>
+                                <th style="padding: 0.5rem;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipients-list">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
             </div>
-            
-            <button class="btn btn-primary" onclick="triggerPipeline()" style="width: 100%; margin-bottom: 1rem; padding: 1rem; font-size: 1.1rem;">
-                🚀 수동 파이프라인 트리거 (Fetch News)
-            </button>
-            
-            <button class="btn" onclick="logout()" style="width: 100%;">Logout</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Check if we already have a session cookie
     if (document.cookie.includes('admin_session=')) {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('control-section').style.display = 'block';
+        showControlPanel();
+    }
+
+    function switchTab(tabName) {
+        document.getElementById('tab-logs').style.display = (tabName === 'logs') ? 'block' : 'none';
+        document.getElementById('tab-users').style.display = (tabName === 'users') ? 'block' : 'none';
+        
+        document.getElementById('tab-btn-logs').style.background = (tabName === 'logs') ? 'var(--accent)' : 'transparent';
+        document.getElementById('tab-btn-users').style.background = (tabName === 'users') ? 'var(--accent)' : 'transparent';
+        
+        if (tabName === 'logs') loadLogs();
+        if (tabName === 'users') loadRecipients();
     }
 
     async function login() {
         const password = document.getElementById('password').value;
         const errDiv = document.getElementById('login-error');
-        
         try {
             const res = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({password: password})
             });
-            
             if (res.ok) {
-                document.getElementById('login-section').style.display = 'none';
-                document.getElementById('control-section').style.display = 'block';
-                errDiv.style.display = 'none';
+                showControlPanel();
             } else {
                 errDiv.textContent = 'Invalid password';
                 errDiv.style.display = 'block';
@@ -67,17 +143,138 @@
         document.getElementById('password').value = '';
     }
 
+    function showControlPanel() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('control-section').style.display = 'block';
+        document.getElementById('login-error').style.display = 'none';
+        switchTab('logs');
+    }
+
     async function triggerPipeline() {
         try {
             const res = await fetch('/api/admin/trigger-pipeline', { method: 'POST' });
             if (res.ok) {
-                alert('파이프라인이 백그라운드에서 시작되었습니다. 대시보드를 확인하세요.');
+                alert('파이프라인 실행 요청을 보냈습니다. 10~20초 뒤에 [새로고침] 버튼을 눌러 로그를 확인하세요!');
             } else {
-                alert('파이프라인 트리거 실패. 세션이 만료되었을 수 있습니다.');
+                alert('세션이 만료되었습니다. 다시 로그인해주세요.');
                 logout();
             }
         } catch (e) {
             alert('오류 발생: ' + e);
+        }
+    }
+
+    async function resetArticles() {
+        if (!confirm("⚠️ 정말로 수집된 모든 기사 데이터를 삭제하시겠습니까?\n(삭제 후 파이프라인을 재실행하면 처음부터 다시 크롤링합니다.)")) return;
+        
+        try {
+            const res = await fetch('/api/admin/articles', { method: 'DELETE' });
+            if (res.ok) {
+                alert("기사 데이터가 모두 초기화되었습니다!");
+                loadLogs();
+            } else {
+                alert("초기화에 실패했습니다.");
+            }
+        } catch (e) {
+            alert('오류 발생: ' + e);
+        }
+    }
+
+    async function loadLogs() {
+        try {
+            const res = await fetch('/api/admin/logs');
+            if (!res.ok) return;
+            const data = await res.json();
+            const tbody = document.getElementById('logs-list');
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 1rem; text-align: center; color: var(--text-secondary);">수집된 로그가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(article => {
+                const dateStr = new Date(article.published_at).toLocaleString();
+                let toneColor = 'var(--text-primary)';
+                if (article.tone_label === '우호') toneColor = 'var(--success)';
+                if (article.tone_label === '비우호') toneColor = 'var(--danger)';
+                
+                return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 0.75rem; color: var(--text-secondary);">${article.id}</td>
+                    <td style="padding: 0.75rem;">${dateStr}</td>
+                    <td style="padding: 0.75rem;">
+                        <a href="${article.url}" target="_blank" style="color: #fff; text-decoration: none;">
+                            ${article.title}
+                        </a>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            ${article.tone_reason || '분석 사유 없음'}
+                        </div>
+                    </td>
+                    <td style="padding: 0.75rem; font-weight: bold; color: ${toneColor};">${article.tone_label || '-'}</td>
+                    <td style="padding: 0.75rem;">
+                        <span class="badge ${article.tier === 1 ? 'badge-danger' : 'badge-info'}">T${article.tier || 2}</span>
+                    </td>
+                </tr>
+            `}).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadRecipients() {
+        try {
+            const res = await fetch('/api/admin/recipients');
+            if (!res.ok) return;
+            const data = await res.json();
+            const tbody = document.getElementById('recipients-list');
+            tbody.innerHTML = data.map(r => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 0.5rem;">${r.id}</td>
+                    <td style="padding: 0.5rem;">${r.name}</td>
+                    <td style="padding: 0.5rem;">${r.telegram_id}</td>
+                    <td style="padding: 0.5rem;">Tier ${r.tier_permission}</td>
+                    <td style="padding: 0.5rem;">
+                        <button class="btn" style="padding: 0.2rem 0.5rem; background: var(--danger);" onclick="deleteRecipient(${r.id})">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function addRecipient() {
+        const name = document.getElementById('rec_name').value;
+        const chat_id = document.getElementById('rec_chat_id').value;
+        const tier = parseInt(document.getElementById('rec_tier').value);
+        
+        if (!name || !chat_id) { alert("이름과 Chat ID를 입력하세요."); return; }
+
+        try {
+            const res = await fetch('/api/admin/recipients', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name, telegram_id: chat_id, tier_permission: tier})
+            });
+            if (res.ok) {
+                document.getElementById('rec_name').value = '';
+                document.getElementById('rec_chat_id').value = '';
+                loadRecipients();
+            } else {
+                alert("등록 실패 (이미 존재하는 ID일 수 있습니다)");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteRecipient(id) {
+        if (!confirm("삭제하시겠습니까?")) return;
+        try {
+            const res = await fetch(`/api/admin/recipients/${id}`, { method: 'DELETE' });
+            if (res.ok) loadRecipients();
+        } catch (e) {
+            console.error(e);
         }
     }
 </script>
