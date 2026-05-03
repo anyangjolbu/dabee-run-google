@@ -4,6 +4,17 @@
 
 ---
 
+## [v0.2.0] - 2026-05-03 (API Integration)
+
+### 🚀 기능 추가 (Features)
+- **네이버 뉴스 API 연동**: `requests`를 이용하여 실제 최신 기사 수집 구현 (`naver_api.py`)
+- **본문 크롤러 구현**: `beautifulsoup4`를 이용해 네이버 뉴스 본문 스크래핑 기능 추가 (`crawler.py`)
+- **Gemini AI 연동**: `google-generativeai`를 도입하여 긴 기사의 3~5줄 요약 및 비우호/우호/중립 톤 판별 및 사유 추출 (`summarizer.py`, `tone_analyzer.py`)
+- **텔레그램 알림 구현**: 봇 API를 통한 비우호(Tier 1) 기사 실시간 푸시 알림 연동 (`telegram_sender.py`)
+- **파이프라인 완성**: 모의 스터브(Stub) 구조를 실제 작동하는 엔드투엔드 파이프라인으로 전환 (`pipeline.py`)
+
+---
+
 ## [v0.1.0] - 2026-05-02 (Prototype Release)
 
 ### 🚀 기능 추가 (Features)
