@@ -1,0 +1,3 @@
+@echo off
+echo Starting DABEE Run Server...
+.\.venv\Scripts\uvicorn.exe main:app --reload

@@ -36,6 +36,13 @@ def trigger_pipeline(is_admin: bool = Depends(get_current_admin)):
     threading.Thread(target=run_pipeline).start()
     return {"status": "pipeline_started"}
 
+@router.post("/trigger-report")
+def trigger_report(is_admin: bool = Depends(get_current_admin)):
+    from app.services.report_builder import generate_daily_report
+    import threading
+    threading.Thread(target=generate_daily_report).start()
+    return {"status": "report_started"}
+
 @router.get("/recipients")
 def get_recipients(is_admin: bool = Depends(get_current_admin), db: Session = Depends(get_db)):
     return db.query(Recipient).all()
@@ -53,6 +60,11 @@ def add_recipient(req: RecipientCreate, is_admin: bool = Depends(get_current_adm
 @router.get("/logs")
 def get_logs(is_admin: bool = Depends(get_current_admin), db: Session = Depends(get_db), limit: int = 100):
     return db.query(Article).order_by(Article.id.desc()).limit(limit).all()
+
+@router.get("/live-logs")
+def get_live_logs_api(is_admin: bool = Depends(get_current_admin)):
+    from app.core.logger import get_live_logs
+    return get_live_logs()
 
 @router.delete("/articles")
 def reset_articles(is_admin: bool = Depends(get_current_admin), db: Session = Depends(get_db)):

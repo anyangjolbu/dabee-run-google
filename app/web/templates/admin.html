@@ -20,9 +20,17 @@
             <div id="control-section" style="display: none;">
                 <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
                     <button class="btn btn-primary" onclick="triggerPipeline()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--warning); border-color: var(--warning);">
-                        🔄 파이프라인 수동 수집 실행
+                        🔄 파이프라인 1회 수동 실행
+                    </button>
+                    <button class="btn btn-primary" onclick="triggerReport()" style="flex: 1; padding: 1rem; font-size: 1.1rem; background: var(--info); border-color: var(--info);">
+                        📊 일일 리포트 즉시 발송
                     </button>
                     <button class="btn" onclick="logout()">Logout</button>
+                </div>
+
+                <!-- 실시간 터미널 로그 -->
+                <div style="background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 0.9rem; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; height: 250px; overflow-y: auto;" id="terminal-logs">
+                    <div>Waiting for logs...</div>
                 </div>
 
                 <!-- 탭 버튼 -->
@@ -164,6 +172,19 @@
         }
     }
 
+    async function triggerReport() {
+        try {
+            const res = await fetch('/api/admin/trigger-report', { method: 'POST' });
+            if (res.ok) {
+                alert('텔레그램으로 일일 리포트 발송이 요청되었습니다! 핸드폰을 확인해주세요.');
+            } else {
+                alert('세션 만료 등 오류 발생');
+            }
+        } catch (e) {
+            alert('오류 발생: ' + e);
+        }
+    }
+
     async function resetArticles() {
         if (!confirm("⚠️ 정말로 수집된 모든 기사 데이터를 삭제하시겠습니까?\n(삭제 후 파이프라인을 재실행하면 처음부터 다시 크롤링합니다.)")) return;
         
@@ -179,6 +200,24 @@
             alert('오류 발생: ' + e);
         }
     }
+
+    // 실시간 터미널 로그 페치 (2초마다)
+    let lastLogCount = 0;
+    setInterval(async () => {
+        if (document.getElementById('control-section').style.display === 'none') return;
+        try {
+            const res = await fetch('/api/admin/live-logs');
+            if (res.ok) {
+                const logs = await res.json();
+                if (logs.length > 0 && logs.length !== lastLogCount) {
+                    const terminal = document.getElementById('terminal-logs');
+                    terminal.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+                    terminal.scrollTop = terminal.scrollHeight;
+                    lastLogCount = logs.length;
+                }
+            }
+        } catch (e) {}
+    }, 2000);
 
     async function loadLogs() {
         try {
@@ -234,10 +273,24 @@
                     <td style="padding: 0.5rem;">${r.telegram_id}</td>
                     <td style="padding: 0.5rem;">Tier ${r.tier_permission}</td>
                     <td style="padding: 0.5rem;">
-                        <button class="btn" style="padding: 0.2rem 0.5rem; background: var(--danger);" onclick="deleteRecipient(${r.id})">삭제</button>
+                        <button class="btn" style="padding: 0.2rem 0.5rem; background: var(--success); border-color: var(--success);" onclick="testRecipient(${r.id})">테스트 발송</button>
+                        <button class="btn" style="padding: 0.2rem 0.5rem; background: var(--danger); border-color: var(--danger);" onclick="deleteRecipient(${r.id})">삭제</button>
                     </td>
                 </tr>
             `).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function testRecipient(id) {
+        try {
+            const res = await fetch(`/api/admin/recipients/${id}/test`, { method: 'POST' });
+            if (res.ok) {
+                alert("테스트 메시지를 발송했습니다! 텔레그램을 확인해보세요.");
+            } else {
+                alert("발송 실패. Chat ID나 봇 토큰이 올바른지 확인해주세요.");
+            }
         } catch (e) {
             console.error(e);
         }

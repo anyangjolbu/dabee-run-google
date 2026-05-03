@@ -16,7 +16,7 @@ def analyze_tone(content: str) -> Tuple[str, str]:
         return "중립", "본문 텍스트 부족"
         
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-flash-lite-latest', generation_config={"response_mime_type": "application/json"})
         prompt = f"""
         다음 뉴스 기사가 'SK하이닉스' 또는 '반도체 산업'의 관점에서 우호적인지, 비우호적인지, 아니면 중립적인지 분석하세요.
         다음 JSON 형식으로만 정확히 답변하세요:
@@ -26,10 +26,7 @@ def analyze_tone(content: str) -> Tuple[str, str]:
         {content[:3000]}
         """
         response = model.generate_content(prompt)
-        
-        # 모델이 마크다운 블록(```json ... ```)으로 감싸서 줄 수 있으므로 정제
-        res_text = response.text.replace("```json", "").replace("```", "").strip()
-        result = json.loads(res_text)
+        result = json.loads(response.text)
         
         return result.get("tone_label", "중립"), result.get("tone_reason", "분석 실패")
     except Exception as e:
